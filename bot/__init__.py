@@ -4,8 +4,9 @@ from aiogram.enums import ParseMode
 from aiogram.filters import CommandStart
 from aiogram.types import Message
 
-from config import BOT_TOKEN, LLM_API_KEY, LLM_MODEL_ENDPOINT, DATA_DIR
+from config import BOT_TOKEN, U_LLM_API_KEY, M_LLM_API_KEY, U_LLM_MODEL_ENDPOINT, DATA_DIR
 from lis import Lis
+from ego import Ego
 from .middlewares import GlobalMiddleware
 
 
@@ -14,7 +15,8 @@ dp = Dispatcher()
 dp.message.middleware(GlobalMiddleware())
 dp.callback_query.middleware(GlobalMiddleware())
 
-lis = Lis(LLM_API_KEY, DATA_DIR)
+ego = Ego(M_LLM_API_KEY, DATA_DIR)
+lis = Lis(U_LLM_MODEL_ENDPOINT, U_LLM_API_KEY, DATA_DIR, ego)
 
 @dp.message(CommandStart())
 async def start(message: Message):

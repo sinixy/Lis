@@ -30,3 +30,11 @@ class Dialog:
 
     def to_list(self) -> list[dict]:
         return [msg.to_dict() for msg in self.messages]
+    
+    def to_text(self, user_name: str = 'user', assistant_name: str = 'assistant') -> str:
+        text = ''
+        role_to_name = {'user': user_name, 'assistant': assistant_name}
+        for m in self.messages:
+            text += f'[{m.dt.isoformat(timespec="seconds")}] {role_to_name[m.role]}: {m.content}\n'
+        print('========\n', text, '========\n')
+        return text

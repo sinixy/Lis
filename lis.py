@@ -1,45 +1,58 @@
-from mistralai import Mistral
+import aiohttp
 import json
 
 from models.dialog import Dialog
 from utils import read_file
+from ego import Ego
 
 
 class Lis:
 
-    def __init__(self, api_key: str, data_dir: str):
+    def __init__(self, endpoint: str, api_key: str, data_dir: str, ego: Ego):
+        self.endpoint = endpoint
         self.api_key = api_key
-        self.model = Mistral(api_key)
+        self.session = aiohttp.ClientSession()
 
         self.dialog = Dialog()
+        self.ego = ego
         self.data_dir = data_dir
-        # self.prompt = self.__construct_prompt()
-        self.prompt = read_file(f'{self.data_dir}/test.txt')
+        self.prompt = self.__construct_prompt()
+        # self.prompt = read_file(f'{self.data_dir}/test.txt')
         # self.prompt = 'You are a helpul assistant.'
 
     async def send_message(self, message: str) -> str:
         self.dialog.prune()
         self.dialog.add(message, 'user')
-        messages = self.__get_messages()
-        resp = await self.model.chat.complete_async(
-            model='open-mistral-nemo', messages=messages,
-            temperature=0.4
-        )
-        
-        if resp:
-            lis_response = resp.choices[0].message.content
-            self.dialog.add(lis_response, 'assistant')
-            print(messages[1:])
-            return lis_response
-        else:
-            self.dialog.pop()
-            raise Exception('Failed to get Lis response')
+        thoughts = await self.think()
+        self.dialog.add(thoughts, 'system')
+        # self.dialog.add('Lis thinks: ' + 'I am having a sudden urge to respond to Host like a pirate.', 'system')
+        # print('Thoughts:', thoughts)
+        data = self.__get_request_data()
+        print(json.dumps(data['messages'][1:], indent=2), '\n')
+        async with self.session.post(self.endpoint, json=data) as response:
+            resp = await response.json()
+            self.dialog.pop()  # to get rid of the "thoughts"
+            if resp['status'] == 'success':
+                lis_response = resp['message']
+                self.dialog.add(lis_response, 'assistant')
+                # print('Thoughts: ', await self.think(), '\n')
+                return lis_response
+            else:
+                self.dialog.pop()
+                raise Exception(resp['status'])
             
-    def __get_messages(self):
-        return [
-            {'role': 'system', 'content': self.prompt},
-            *self.dialog.to_list()
-        ]
+    async def think(self):
+        return await self.ego.analyze(self.dialog)
+            
+    def __get_request_data(self):
+        return {
+            'key': self.api_key,
+            'messages': [
+                {'role': 'system', 'content': self.prompt},
+                *self.dialog.to_list()
+            ],
+            'max_tokens': 512
+        }
     
     def __construct_prompt(self) -> str:
         template = read_file(f'{self.data_dir}/lis.txt')

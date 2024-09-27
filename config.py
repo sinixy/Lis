@@ -6,7 +6,8 @@ load_dotenv()
 BOT_TOKEN = getenv('BOT_TOKEN')
 HOST_ID = int(getenv('HOST_ID'))
 
-LLM_API_KEY = getenv('LLM_API_KEY')
-LLM_MODEL_ENDPOINT = getenv('LLM_MODEL_ENDPOINT')
+U_LLM_API_KEY = getenv('U_LLM_API_KEY')
+M_LLM_API_KEY = getenv('M_LLM_API_KEY')
+U_LLM_MODEL_ENDPOINT = getenv('U_LLM_MODEL_ENDPOINT')
 
 DATA_DIR = getenv('DATA_DIR')
